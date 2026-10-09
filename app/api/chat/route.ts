@@ -42,14 +42,16 @@ function isRateLimited(key: string): boolean {
 
 export async function POST(request: Request) {
   const origin = request.headers.get("origin");
-  if (origin) {
-    try {
-      if (new URL(origin).origin !== new URL(request.url).origin) {
-        return NextResponse.json({ error: "Origem da requisição não permitida." }, { status: 403 });
-      }
-    } catch {
-      return NextResponse.json({ error: "Cabeçalho de origem inválido." }, { status: 400 });
+  if (!origin) {
+    return NextResponse.json({ error: "O cabeçalho de origem é obrigatório." }, { status: 403 });
+  }
+
+  try {
+    if (new URL(origin).origin !== new URL(request.url).origin) {
+      return NextResponse.json({ error: "Origem da requisição não permitida." }, { status: 403 });
     }
+  } catch {
+    return NextResponse.json({ error: "Cabeçalho de origem inválido." }, { status: 400 });
   }
 
   if (isRateLimited(getClientKey(request))) {
