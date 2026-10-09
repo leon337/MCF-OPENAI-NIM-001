@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export function middleware(request: NextRequest) {
+  // Preview deployments are protected by Vercel deployment protection. Apply
+  // application-level Basic Auth only to the production environment.
+  if (process.env.VERCEL_ENV !== "production") return NextResponse.next();
+
   const username = process.env.APP_BASIC_AUTH_USER;
   const password = process.env.APP_BASIC_AUTH_PASSWORD;
 
-  if (process.env.NODE_ENV !== "production") return NextResponse.next();
-
-  // Fail closed: never publish an unprotected app when credentials are missing.
+  // Fail closed: never publish an unprotected production app.
   if (!username || !password) {
     return new NextResponse("Application access is not configured.", {
       status: 503,
