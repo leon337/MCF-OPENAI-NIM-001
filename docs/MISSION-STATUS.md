@@ -1,47 +1,39 @@
 # MCF-OPENAI-NIM-001 — Estado da missão
 
-**Estado:** EM ANDAMENTO — bloqueio externo no provisionamento Vercel  
+**Estado:** EM ANDAMENTO — build Vercel falhou; logs detalhados indisponíveis via integração conectada  
 **Coordenador:** Mestre  
 **Fonte de verdade do código:** este repositório GitHub  
 **Objetivo:** base inicial de IA com GitHub, Vercel e NVIDIA NIM.
 
 ## Evidências executadas
 
-- **Desvio de processo:** os arquivos iniciais foram gravados diretamente em `main` via API do GitHub. A skill `MCF-IMPLEMENT-CHANGE` no registro oficial proíbe escrita direta em `main`; isso não está conforme o fluxo MCF. Os commits existentes foram preservados para evitar uma reescrita destrutiva do histórico. A partir daqui, mudanças adicionais devem ocorrer em branch e passar por revisão/PR.
+- **Desvio de processo anterior:** arquivos iniciais foram gravados diretamente em `main` via API do GitHub. A skill `MCF-IMPLEMENT-CHANGE` proíbe escrita direta em `main`. Os commits existentes foram preservados; esta correção está isolada na branch `fix/vercel-build-and-api-guards` e será proposta via PR.
+- Commit de produção que falhou: `4a7ffb13557a952a8791dc070919887357954e97`.
+- Vercel confirmou `errorCode=lint_or_type_error`, `errorStep=buildStep` e `npm run build exited with 1`. A API de eventos de build retornou 404 para o deployment, portanto a linha/arquivo da causa não pôde ser confirmada. A causa raiz permanece **não determinada** até a execução de novo build com logs acessíveis.
+- O status combinado do commit no GitHub indica `Vercel: failure`; isso confirma falha, não identifica a causa.
+- O projeto Vercel `mcf-openai-nim-001` existe, mas o deploy mais recente estava em `ERROR`; aliases existem e a proteção SSO da Vercel está habilitada para deployments, exceto domínios customizados.
+- Consulta de variáveis de ambiente retornou lista vazia quando o endpoint foi acessível sem escopo alternativo; uma consulta posterior com ID/time retornou 404. Não há evidência confirmada de `NVIDIA_API_KEY` configurada.
+- Fontes MCF consultadas: `skills/registry.yaml`, MCF-DEC-052 e skill Vercel `deployments-cicd`. O registro contém skills formais de debug, implementação, revisão, testes, PR e deploy; não foi encontrado mecanismo executável de agentes locais nesta sessão. Papéis especializados são revisões simuladas pelo Mestre, não agentes independentes.
+- O registro consultado não apresenta skill explícita de aprendizado/postmortem. O aprendizado desta missão é documentado aqui como fallback local; nenhuma fonte oficial do MCF foi alterada.
 
-- Repositório inicial estava vazio; confirmado pelo retorno da API GitHub.
-- Criados arquivos de aplicação Next.js/TypeScript, rota server-side NVIDIA NIM, interface de chat, variáveis de ambiente de exemplo, documentação e workflow de CI.
-- Commits de implementação confirmados pelo GitHub:
-  - `2e12c0fda72d4b8aa8ac930c964943839aa7e7a7` — README inicial.
-  - `a747abec640e40bb09e3dd8ec17688fbfcbef26c` — rota NVIDIA NIM.
-  - `ed0713318dbbfb99a272c2c7bd814d484384c0fb` — interface.
-  - `0809bafc5d06b9aabf15b9c35476152bb98f74c3` — workflow CI ajustado.
-  - `77fc40dc6ecfa3297bc5c0419a66c8705442cd61` — limite de histórico.
-- Arquivos foram lidos novamente via GitHub para confirmar que existem no branch `main`.
-- A consulta de status de commit retornou uma lista vazia de status checks; isso **não comprova** que lint/build passaram.
-- Não há chave NVIDIA no repositório, como esperado.
+## Alterações propostas nesta branch
 
-## Bloqueio Vercel
+- Troca da importação de `FormEvent` por importação de tipo e remoção da asserção não nula na resposta da UI, como limpeza de tipagem/lint; isso ainda não prova que esses pontos eram a causa original.
+- Middleware de autenticação HTTP Basic para produção, com falha fechada se as credenciais não forem configuradas.
+- Limite básico de 10 solicitações por minuto por endereço na rota de chat, validação de origem e limites de entrada/histórico.
+- Documentação de variáveis e limites de segurança.
 
-- A conta conectada expõe o time `PREDIX AI BR` (`team_D45x1LavGkCy2ifRlrShm2WJ`).
-- A tentativa de criar e vincular o projeto `mcf-openai-nim-001` falhou com HTTP 403 `forbidden`: a integração não tem permissão para criar o projeto.
-- Consulta subsequente não encontrou projeto Vercel com esse nome.
-- Nenhum deploy foi confirmado.
+## Critérios de aceite
 
-## Critérios de aceite ainda pendentes
-
-- [ ] Lint e build executados com resultado aprovado.
-- [ ] Projeto Vercel criado e conectado ao repositório.
-- [ ] Variáveis NVIDIA configuradas diretamente na Vercel.
-- [ ] Deploy de preview com estado `READY`.
-- [ ] Teste da rota com chave válida e resposta real do NVIDIA NIM.
-- [ ] Controle de acesso e rate limiting adicionados antes de qualquer exposição pública de produção.
+- [ ] Build e lint aprovados por CI/Vercel.
+- [ ] PR revisado e integrado conforme gates MCF.
+- [ ] Deploy Vercel de produção em estado `READY`.
+- [ ] `APP_BASIC_AUTH_USER` e `APP_BASIC_AUTH_PASSWORD` configuradas diretamente na Vercel.
+- [ ] `NVIDIA_API_KEY` configurada diretamente na Vercel.
+- [ ] Teste real da rota com chave válida e resposta do NVIDIA NIM.
+- [ ] Rate limiting distribuído/edge configurado antes de tráfego público em escala.
 - [ ] Revisão final de segurança e evidências.
 
-## Aprendizado operacional
+## Próxima dependência externa
 
-- A busca no `skills/registry.yaml` por termos de aprendizado, retrospectiva, memória ou postmortem não encontrou skill explícita para registrar lições. Este arquivo preserva o aprendizado local desta missão; não foi alterado o mecanismo oficial de memória/aprendizado do MCF.
-
-## Próxima ação
-
-Desbloquear a criação/vinculação do projeto na Vercel via permissões da integração ou conexão pelo painel Vercel. Depois disso, continuar validação e deploy. Não compartilhar a chave NVIDIA no chat; inseri-la diretamente nas variáveis de ambiente da Vercel.
+Aguardar CI/preview da branch e inspecionar logs. Para o teste end-to-end, Leandro deve cadastrar as credenciais diretamente no painel Vercel; não enviar segredos no chat.
