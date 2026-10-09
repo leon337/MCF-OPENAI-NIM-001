@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 
 type Message = {
   role: "user" | "assistant";
@@ -31,11 +32,12 @@ export default function Home() {
         body: JSON.stringify({ message, history }),
       });
       const data = (await response.json()) as { answer?: string; error?: string };
+      const answer = data.answer;
 
-      if (!response.ok || !data.answer) {
+      if (!response.ok || typeof answer !== "string" || !answer) {
         throw new Error(data.error || "A solicitação não foi concluída.");
       }
-      setMessages((current) => [...current, { role: "assistant", content: data.answer! }]);
+      setMessages((current) => [...current, { role: "assistant", content: answer }]);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Ocorreu um erro inesperado.");
     } finally {
