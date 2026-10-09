@@ -42,6 +42,7 @@ A integração real com NVIDIA exige uma chave válida e conectividade externa; 
 ## Segurança e limites
 
 - A API é chamada por uma rota server-side (`/api/chat`).
+- **Não publique como serviço aberto de produção ainda.** A interface não possui autenticação nem rate limiting distribuído; proteja o preview e implemente controles de acesso/limite de uso antes de expor a endpoint publicamente.
 - A rota valida formato e tamanho básico da entrada e limita o histórico enviado ao provedor.
 - Não envie segredos ou dados sensíveis no chat.
 - O SDK OpenAI é usado apenas para a interface compatível de Chat Completions. Recursos específicos da OpenAI não são presumidos como suportados pelo NVIDIA NIM.
