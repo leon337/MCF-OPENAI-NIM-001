@@ -9,9 +9,57 @@ type ChatMessage = {
   content: string;
 };
 
-export async function POST(request: Request) {
-  let body: unknown;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX_REQUESTS = 10;
+const requestCounts = new Map<string, { count: number; resetAt: number }>();
 
+function getClientKey(request: Request): string {
+  // Vercel appends the connecting client address to x-forwarded-for.
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  const address = forwardedFor?.split(",").map((part) => part.trim()).filter(Boolean).at(-1);
+  return address || "unknown";
+}
+
+function isRateLimited(key: string): boolean {
+  const now = Date.now();
+  const current = requestCounts.get(key);
+  if (!current || current.resetAt <= now) {
+    requestCounts.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return false;
+  }
+
+  current.count += 1;
+  if (current.count > RATE_LIMIT_MAX_REQUESTS) return true;
+
+  // Bound memory growth in long-lived instances.
+  if (requestCounts.size > 2_000) {
+    for (const [entryKey, entry] of requestCounts) {
+      if (entry.resetAt <= now) requestCounts.delete(entryKey);
+    }
+  }
+  return false;
+}
+
+export async function POST(request: Request) {
+  const origin = request.headers.get("origin");
+  if (origin) {
+    try {
+      if (new URL(origin).origin !== new URL(request.url).origin) {
+        return NextResponse.json({ error: "Origem da requisição não permitida." }, { status: 403 });
+      }
+    } catch {
+      return NextResponse.json({ error: "Cabeçalho de origem inválido." }, { status: 400 });
+    }
+  }
+
+  if (isRateLimited(getClientKey(request))) {
+    return NextResponse.json(
+      { error: "Limite temporário de solicitações atingido. Tente novamente em um minuto." },
+      { status: 429, headers: { "Retry-After": "60" } },
+    );
+  }
+
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
