@@ -32,6 +32,7 @@ export async function POST(request: Request) {
 
   const history: ChatMessage[] = Array.isArray(input.history)
     ? input.history
+        .slice(-10)
         .filter(
           (item): item is ChatMessage =>
             !!item &&
@@ -39,7 +40,6 @@ export async function POST(request: Request) {
             ((item as ChatMessage).role === "user" || (item as ChatMessage).role === "assistant") &&
             typeof (item as ChatMessage).content === "string",
         )
-        .slice(-10)
         .map((item) => ({ role: item.role, content: item.content.slice(0, 2000) }))
     : [];
 
